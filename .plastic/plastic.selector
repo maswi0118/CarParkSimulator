@@ -1,4 +1,0 @@
-repository "CarParkSimulator@maswi0118@cloud"
-  path "/"
-    br "/main"
-    co "/main"

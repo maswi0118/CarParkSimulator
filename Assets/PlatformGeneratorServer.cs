@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlatformGeneratorServer : MonoBehaviour
 {
+    public GameObject carPrefab;
+    
     private const int serverPort = 3000;
 
     void Start()
@@ -52,8 +54,8 @@ public class PlatformGeneratorServer : MonoBehaviour
     
     void InstantiateCar(string data)
     {
-        GameObject car = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         CarDto carData = JsonUtility.FromJson<CarDto>(data);
+        GameObject car = Instantiate(carPrefab);
         car.name = carData.name;
         car.transform.position = new Vector3(carData.x, carData.y, carData.z);
     }

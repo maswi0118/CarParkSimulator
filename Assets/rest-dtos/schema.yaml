@@ -1,0 +1,133 @@
+﻿openapi: 3.0.3
+info:
+  title: Car park simulator 1.0.0
+  description: Car park simulation allowing for creation and real-time control of the car park scene with use of Unity engine.
+  version: 1.0.0
+tags:
+  - name: create
+    description: Utilized to initialize scene.
+  - name: control
+    description: Utilized to control existing scene.
+paths:
+  /create-board:
+    post:
+      tags:
+        - create
+      summary: Create scenography for car park.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rows:
+                  type: integer
+                columns:
+                  type: integer
+                occupationPercentage:
+                  type: integer
+                  pattern: (100)|[1-9]\d?
+                roadType:
+                  type: string
+                  enum: [asphalt, concrete, dirt]
+                toggleAI:
+                  type: boolean
+      responses:
+        200:
+          description: Board created successfully.
+  /new-car:
+    post:
+      tags:
+        - control
+      summary: Spawn a new car and drive to a specified place.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [compact, sedan, SUV]
+                coordinates:
+                  type: string
+                color:
+                  type: string
+                  pattern: ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$
+      responses:
+        200:
+          description: Car spawned and driven successfully.
+
+  /repark-car:
+    put:
+      tags:
+        - control
+      summary: Repark the car to a different place.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                car_id:
+                  type: string
+                destination_id:
+                  type: string
+      responses:
+        200:
+          description: Car reparked successfully
+
+  /leave-car-park:
+    delete:
+      tags:
+        - control
+      summary: Leave the car park
+      responses:
+        200:
+          description: Car left the car park successfully
+
+  /change-animation-speed:
+    put:
+      tags:
+        - control
+      summary: Change speed of animations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                speed:
+                  type: integer
+                  pattern: (10)|[1-9]\d?
+      responses:
+        200:
+          description: Animation speed changed successfully
+  /board-info:
+    get:
+      tags:
+        - control
+      summary: Get current board state information
+      responses:
+        200:
+          description: Board information sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  board:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        coordinates:
+                          type: string
+                        carID:
+                          type: string
+                      required:
+                        - coordinates

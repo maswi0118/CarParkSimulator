@@ -1,3 +1,4 @@
+using rest_dtos;
 using UnityEngine;
 using System.Collections.Generic;
     
@@ -27,6 +28,10 @@ public class PlatformGeneratorServer : MonoBehaviour
     
     public ParkingSpace parkingSpace = new ParkingSpace();
     
+    public GameObject carPrefab;
+    
+    private const int serverPort = 3000;
+
     void Start()
     {
         StartServer();
@@ -36,17 +41,26 @@ public class PlatformGeneratorServer : MonoBehaviour
     {
         SimpleHTTPServer.Instance.Setup(serverPort);
         SimpleHTTPServer.Instance.OnGet += OnGetRequest;
+        SimpleHTTPServer.Instance.OnPost += OnPostRequest;
         Debug.Log("Server started on port " + serverPort);
     }
-    
-
-    
 
     void OnGetRequest(string path)
     {
-        // Handle the incoming request and generate the platform
-        GeneratePlatform();
+        if ("/generate-board".Equals(path))
+        {
+            GeneratePlatform();
+        }
     }
+    
+    void OnPostRequest(string path, string data)
+    {
+        if ("/new-car".Equals(path))
+        {
+            GenerateCar(data);
+        }
+    }
+
     
     void generateRow(GameObject parkingSpace, int amount, float startingX, float startingZ)
     {
@@ -133,5 +147,22 @@ public class PlatformGeneratorServer : MonoBehaviour
             Debug.Log("Coordinate: " + entry.Key + ", Label: " + entry.Value);
         }
 
+    void GenerateCar(string data)
+    {
+        InstantiateCar(data);
+    }
+
+    void InstantiatePlatform()
+    {
+        GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        platform.transform.position = new Vector3(0, 1, 0);
+    }
+    
+    void InstantiateCar(string data)
+    {
+        CarDto carData = JsonUtility.FromJson<CarDto>(data);
+        GameObject car = Instantiate(carPrefab);
+        car.name = carData.name;
+        car.transform.position = new Vector3(carData.x, carData.y, carData.z);
     }
 }

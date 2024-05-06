@@ -1,8 +1,9 @@
+using rest_dtos;
 using UnityEngine;
 
 public class PlatformGeneratorServer : MonoBehaviour
 {
-    private const int serverPort = 3000; // Choose a port number
+    private const int serverPort = 3000;
 
     void Start()
     {
@@ -13,24 +14,47 @@ public class PlatformGeneratorServer : MonoBehaviour
     {
         SimpleHTTPServer.Instance.Setup(serverPort);
         SimpleHTTPServer.Instance.OnGet += OnGetRequest;
+        SimpleHTTPServer.Instance.OnPost += OnPostRequest;
         Debug.Log("Server started on port " + serverPort);
     }
 
     void OnGetRequest(string path)
     {
-        // Handle the incoming request and generate the platform
-        GeneratePlatform();
+        if ("/generate-board".Equals(path))
+        {
+            GeneratePlatform();
+        }
+    }
+    
+    void OnPostRequest(string path, string data)
+    {
+        if ("/new-car".Equals(path))
+        {
+            GenerateCar(data);
+        }
     }
 
     void GeneratePlatform()
     {
-        // Instantiate or manipulate your platform GameObject here
         InstantiatePlatform();
+    }
+
+    void GenerateCar(string data)
+    {
+        InstantiateCar(data);
     }
 
     void InstantiatePlatform()
     {
         GameObject platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        platform.transform.position = new Vector3(0, 1, 0); // Adjust position as needed
+        platform.transform.position = new Vector3(0, 1, 0);
+    }
+    
+    void InstantiateCar(string data)
+    {
+        GameObject car = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        CarDto carData = JsonUtility.FromJson<CarDto>(data);
+        car.name = carData.name;
+        car.transform.position = new Vector3(carData.x, carData.y, carData.z);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using UnityEngine;
@@ -11,6 +12,9 @@ public class SimpleHTTPServer : MonoBehaviour
 
     public delegate void OnGetRequestHandler(string path);
     public event OnGetRequestHandler OnGet;
+    
+    public delegate void OnPostRequestHandler(string path, string data);
+    public event OnPostRequestHandler OnPost;
 
     void Awake()
     {
@@ -29,8 +33,7 @@ public class SimpleHTTPServer : MonoBehaviour
         listener = new HttpListener();
         listener.Prefixes.Add("http://localhost:" + port + "/");
         listener.Start();
-
-        // Start handling requests in the background
+        
         BeginHandleRequests();
     }
 
@@ -40,10 +43,8 @@ public class SimpleHTTPServer : MonoBehaviour
         {
             try
             {
-                // Wait for a context asynchronously
                 HttpListenerContext context = await listener.GetContextAsync();
-
-                // Handle the context in the main thread
+                
                 HandleRequest(context);
             }
             catch (Exception e)
@@ -56,10 +57,19 @@ public class SimpleHTTPServer : MonoBehaviour
     private void HandleRequest(HttpListenerContext context)
     {
         string path = context.Request.Url.LocalPath;
+        string data = "";
 
-        if (context.Request.HttpMethod == "GET" && OnGet != null)
+        if (context.Request.HttpMethod == "GET" && OnGet != null) 
         {
             OnGet(path);
+        } 
+        else if (context.Request.HttpMethod == "POST" && OnPost != null) 
+        {
+            using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding)) 
+            {
+                data = reader.ReadToEnd();
+            }
+            OnPost(path, data);
         }
 
         byte[] responseBytes = Encoding.UTF8.GetBytes("OK");

@@ -13,7 +13,7 @@ public class ParkingSpace
     }
 
     // Method to add a coordinate-label pair to the dictionary
-    public void AddLabel(Vector2Int coordinate, string label)
+    public void AddLabel(Vector2 coordinate, string label)
     {
         if (!coordinateToLabelMap.ContainsKey(coordinate))
         {
@@ -26,7 +26,7 @@ public class PlatformGeneratorServer : MonoBehaviour
 {
     private const int serverPort = 3000; // Choose a port number
 
-    public ParkingSpace parkingSpace = new ParkingSpace();
+    public ParkingSpace parkingSpaceMapper = new ParkingSpace();
 
     public GameObject carPrefab;
     
@@ -101,7 +101,7 @@ public class PlatformGeneratorServer : MonoBehaviour
             float middleZCoordinate = startingZ - verticaltLineLength / 2f;
             string label = "A" + 1;
 
-            parkingSpace.AddLabel(new Vector2(middleXCoordinate, middleZCoordinate), label);
+            parkingSpaceMapper.AddLabel(new Vector2(middleXCoordinate, middleZCoordinate), label);
 
             GameObject sideLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
             sideLine.transform.SetParent(parkingSpace.transform);
@@ -164,7 +164,7 @@ public class PlatformGeneratorServer : MonoBehaviour
 
         generateRow(parkingSpace, 9, startingX, startingZ);
 
-        foreach (KeyValuePair<Vector2, string> entry in parkingSpace.coordinateToLabelMap)
+        foreach (KeyValuePair<Vector2, string> entry in parkingSpaceMapper.coordinateToLabelMap)
         {
             Debug.Log("Coordinate: " + entry.Key + ", Label: " + entry.Value);
         }

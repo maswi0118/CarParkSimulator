@@ -20,6 +20,18 @@ public class ParkingSpace
             coordinateToLabelMap.Add(coordinate, label);
         }
     }
+    
+    public Vector2? GetCoordinatesByLabel(string label)
+    {
+        foreach (KeyValuePair<Vector2, string> entry in coordinateToLabelMap)
+        {
+            if (entry.Value == label)
+            {
+                return entry.Key;
+            }
+        }
+        return null; // Return null if label not found
+    }
 }
 
 public class PlatformGeneratorServer : MonoBehaviour
@@ -60,7 +72,8 @@ public class PlatformGeneratorServer : MonoBehaviour
         CarDto carData = JsonUtility.FromJson<CarDto>(data);
         GameObject car = Instantiate(carPrefab);
         car.name = carData.name;
-        car.transform.position = new Vector3(carData.x, carData.y, carData.z);
+        Vector2? coordinates = parkingSpaceMapper.GetCoordinatesByLabel(carData.placeId);
+        car.transform.position = new Vector3(coordinates.Value.x, 0, coordinates.Value.y);
     }
     
 
@@ -99,7 +112,7 @@ public class PlatformGeneratorServer : MonoBehaviour
         {
             float middleXCoordinate = (i * horizontalLineLength) + startingX - horizontalLineLength / 2f;
             float middleZCoordinate = startingZ - verticaltLineLength / 2f;
-            string label = "A" + 1;
+            string label = "A" + i;
 
             parkingSpaceMapper.AddLabel(new Vector2(middleXCoordinate, middleZCoordinate), label);
 
@@ -168,6 +181,5 @@ public class PlatformGeneratorServer : MonoBehaviour
         {
             Debug.Log("Coordinate: " + entry.Key + ", Label: " + entry.Value);
         }
-        
     }
 }

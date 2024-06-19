@@ -2,7 +2,8 @@ using rest_dtos;
 using UnityEngine;
 using System.Collections.Generic;
 using System;
-
+using UnityEngine.UI;
+using TMPro;
 
 [Serializable]
 public class GameObjectInfo
@@ -327,17 +328,16 @@ public class PlatformGeneratorServer : MonoBehaviour
             lineMaterial.color = Color.white;
             sideLine.GetComponent<Renderer>().material = lineMaterial;
 
-            GameObject textObj = new GameObject("Text");
+            GameObject textObj = new GameObject("TextLabel");
             textObj.transform.SetParent(parkingSpace.transform);
+            TextMeshPro textMeshPro = textObj.AddComponent<TextMeshPro>();
+            textMeshPro.text = label;
+            textMeshPro.fontSize = 17;
+            textMeshPro.alignment = TextAlignmentOptions.Center;
+            textMeshPro.color = Color.white;
             textObj.transform.localPosition =
                 new Vector3(middleXCoordinate, 0.01f, startingZ - 1.5f);
             textObj.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            TextMesh textMesh = textObj.AddComponent<TextMesh>();
-            textMesh.text = label;
-            textMesh.fontSize = 17;
-            textMesh.alignment = TextAlignment.Center;
-            textMesh.anchor = TextAnchor.MiddleCenter;
-            textMesh.color = Color.white;
 
             i++;
         }
@@ -385,17 +385,16 @@ public class PlatformGeneratorServer : MonoBehaviour
             lineMaterial.color = Color.white;
             sideLine.GetComponent<Renderer>().material = lineMaterial;
 
-            GameObject textObj = new GameObject("Text");
+            GameObject textObj = new GameObject("TextLabel");
             textObj.transform.SetParent(parkingSpace.transform);
+            TextMeshPro textMeshPro = textObj.AddComponent<TextMeshPro>();
+            textMeshPro.text = label;
+            textMeshPro.fontSize = 17;
+            textMeshPro.alignment = TextAlignmentOptions.Center;
+            textMeshPro.color = Color.white;
             textObj.transform.localPosition =
                 new Vector3(middleXCoordinate, 0.01f, startingZ - 1.5f);
             textObj.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            TextMesh textMesh = textObj.AddComponent<TextMesh>();
-            textMesh.text = label;
-            textMesh.fontSize = 17;
-            textMesh.alignment = TextAlignment.Center;
-            textMesh.anchor = TextAnchor.MiddleCenter;
-            textMesh.color = Color.white;
 
             i++;
         }

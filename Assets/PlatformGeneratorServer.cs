@@ -62,7 +62,7 @@ public class ParkingSpace
             coordinateToLabelMap.Add(coordinate, label);
         }
     }
-    
+
     public Vector2? GetCoordinatesByLabel(string label)
     {
         foreach (KeyValuePair<Vector2, string> entry in coordinateToLabelMap)
@@ -72,7 +72,7 @@ public class ParkingSpace
                 return entry.Key;
             }
         }
-        return null; 
+        return null;
     }
 
     public List<LabelGameObjectPair> ConvertDictionaryToList()
@@ -92,32 +92,92 @@ public class ParkingSpace
     }
 
 }
-
 public class CarAnimator : MonoBehaviour
 {
-    public Transform target;
+    private Transform target;
+    private Vector3 finalTarget;
+    private Vector3 middleRowPosition;
+    private Vector3 finalAdjustmentPosition;
+    private int step = 0;
     public float speed = 5f;
 
     void Update()
     {
         if (target != null)
         {
-            float step = speed * Time.deltaTime;
-            transform.position = Vector3.MoveTowards(transform.position, target.position, step);
+            float stepDistance = speed * Time.deltaTime;
 
-            if (Vector3.Distance(transform.position, target.position) < 0.001f)
+            switch (this.step)
             {
-                target = null; // Stop moving when the target is reached
+                case 0:
+                    // Move along Z axis to the middle of the row
+                    RotateCar(middleRowPosition - transform.position);
+                    transform.position = Vector3.MoveTowards(transform.position, middleRowPosition, stepDistance);
+                    if (Vector3.Distance(transform.position, middleRowPosition) < 0.001f)
+                    {
+                        this.step = 1;
+                    }
+                    break;
+                case 1:
+                    // Move along X axis to the target column
+                    RotateCar(finalTarget - transform.position);
+                    transform.position = Vector3.MoveTowards(transform.position, finalTarget, stepDistance);
+                    if (Vector3.Distance(transform.position, finalTarget) < 0.001f)
+                    {
+                        this.step = 2;
+                    }
+                    break;
+                case 2:
+                    // Final adjustment in Z axis
+                    RotateCar(finalAdjustmentPosition - transform.position);
+                    transform.position = Vector3.MoveTowards(transform.position, finalAdjustmentPosition, stepDistance);
+                    if (Vector3.Distance(transform.position, finalAdjustmentPosition) < 0.001f)
+                    {
+                        target = null;
+                    }
+                    break;
             }
         }
     }
 
-    public void SetTarget(Vector3 newTarget)
+    private void RotateCar(Vector3 direction)
+    {
+        if (direction != Vector3.zero)
+        {
+            // Calculate the angle between the current forward direction and the target direction
+            float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0, 0, -angle);
+        }
+    }
+
+    public void SetTarget(Vector3 newTarget, string label)
     {
         target = new GameObject("Target").transform;
-        target.position = newTarget;
+
+        // Determine the row character from the label (first character)
+        char row = label[0];
+
+        // Calculate middle of the row position (between B and C, D and E, etc.)
+        float middleZ;
+        if (row % 2 == 1) // even rows (B, D, F, etc.)
+        {
+            middleZ = newTarget.z + 4.0f;
+        }
+        else // odd rows (A, C, E, etc.)
+        {
+            middleZ = newTarget.z - 5.0f;
+        }
+
+        middleRowPosition = new Vector3(transform.position.x, 0, middleZ);
+
+        // Set final target
+        finalTarget = new Vector3(newTarget.x, 0, middleZ);
+
+        // Determine the final adjustment position
+        finalAdjustmentPosition = new Vector3(newTarget.x, 0, newTarget.z);
     }
 }
+
 
 public class PlatformGeneratorServer : MonoBehaviour
 {
@@ -177,14 +237,14 @@ public class PlatformGeneratorServer : MonoBehaviour
         // Set the initial position to A1 (you need to have a mapping for A1 in your coordinateToLabelMap)
         Vector2? initialCoordinates = parkingSpaceMapper.GetCoordinatesByLabel("A1");
         Debug.Log("Initial coordinates: " + initialCoordinates);
-        car.transform.position = new Vector3(initialCoordinates.Value.x, 0, initialCoordinates.Value.y);
+        car.transform.position = new Vector3(initialCoordinates.Value.x - 5, 0, initialCoordinates.Value.y + 8);
 
         // Set the target position to the specified parking spot
         Vector2? targetCoordinates = parkingSpaceMapper.GetCoordinatesByLabel(carData.placeId);
         if (targetCoordinates.HasValue)
         {
             Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 0, targetCoordinates.Value.y);
-            carAnimator.SetTarget(targetPosition);
+            carAnimator.SetTarget(targetPosition, carData.placeId);
         }
 
         parkingSpaceMapper.AddGameObjectInfo(carData.placeId, "Car", carData.model, car);
@@ -301,8 +361,8 @@ public class PlatformGeneratorServer : MonoBehaviour
 
         GameObject lastSideLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
         lastSideLine.transform.SetParent(parkingSpace.transform);
-        lastSideLine.transform.localScale = new Vector3(0.2f, 0.01f, 5); // Adjust scale as needed
-        lastSideLine.transform.localPosition = new Vector3(startingX, 0.01f, startingZ); // Adjust position as needed
+        lastSideLine.transform.localScale = new Vector3(0.2f, 0.01f, 5);
+        lastSideLine.transform.localPosition = new Vector3(startingX, 0.01f, startingZ);
         Material lastLineMaterial = new Material(Shader.Find("Standard"));
         lastLineMaterial.color = Color.white;
         lastSideLine.GetComponent<Renderer>().material = lastLineMaterial;
@@ -321,16 +381,14 @@ public class PlatformGeneratorServer : MonoBehaviour
             GameObject sideLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
             sideLine.transform.SetParent(parkingSpace.transform);
             sideLine.transform.localScale = new Vector3(0.2f, 0.01f, verticalLineLength);
-            sideLine.transform.localPosition =
-                new Vector3((i * horizontalLineLength) + startingX, 0.01f, startingZ);
+            sideLine.transform.localPosition = new Vector3((i * horizontalLineLength) + startingX, 0.01f, startingZ);
             Material lineMaterial = new Material(Shader.Find("Standard"));
             lineMaterial.color = Color.white;
             sideLine.GetComponent<Renderer>().material = lineMaterial;
 
             GameObject textObj = new GameObject("Text");
             textObj.transform.SetParent(parkingSpace.transform);
-            textObj.transform.localPosition =
-                new Vector3(middleXCoordinate, 0.01f, startingZ - 1.5f);
+            textObj.transform.localPosition = new Vector3(middleXCoordinate, 0.01f, startingZ - 1.5f);
             textObj.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             TextMesh textMesh = textObj.AddComponent<TextMesh>();
             textMesh.text = label;
@@ -346,8 +404,7 @@ public class PlatformGeneratorServer : MonoBehaviour
         bottomLine.transform.SetParent(parkingSpace.transform);
         bottomLine.transform.localScale = new Vector3(amount * 3, 0.01f, 0.2f);
         float bottomLineXPosition = startingX + ((horizontalLineLength * amount) / 2f);
-        bottomLine.transform.localPosition =
-            new Vector3(bottomLineXPosition, 0.01f, startingZ + 2.4f);
+        bottomLine.transform.localPosition = new Vector3(bottomLineXPosition, 0.01f, startingZ + 2.4f);
 
         Material bottomMaterial = new Material(Shader.Find("Standard"));
         bottomMaterial.color = Color.white;
@@ -379,16 +436,14 @@ public class PlatformGeneratorServer : MonoBehaviour
             GameObject sideLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
             sideLine.transform.SetParent(parkingSpace.transform);
             sideLine.transform.localScale = new Vector3(0.2f, 0.01f, verticalLineLength);
-            sideLine.transform.localPosition =
-                new Vector3((i * horizontalLineLength) + startingX, 0.01f, startingZ);
+            sideLine.transform.localPosition = new Vector3((i * horizontalLineLength) + startingX, 0.01f, startingZ);
             Material lineMaterial = new Material(Shader.Find("Standard"));
             lineMaterial.color = Color.white;
             sideLine.GetComponent<Renderer>().material = lineMaterial;
 
             GameObject textObj = new GameObject("Text");
             textObj.transform.SetParent(parkingSpace.transform);
-            textObj.transform.localPosition =
-                new Vector3(middleXCoordinate, 0.01f, startingZ - 1.5f);
+            textObj.transform.localPosition = new Vector3(middleXCoordinate, 0.01f, startingZ + 1.5f);
             textObj.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             TextMesh textMesh = textObj.AddComponent<TextMesh>();
             textMesh.text = label;

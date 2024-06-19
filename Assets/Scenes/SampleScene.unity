@@ -228,6 +228,7 @@ GameObject:
   - component: {fileID: 963194228}
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
+  - component: {fileID: 963194229}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -309,6 +310,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &963194229
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 145304d4497949dabcedef5e4532f714, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  movementSpeed: 10
+  mouseSensitivity: 100
+  maxPitch: 80
+  minPitch: -80
 --- !u!1 &1041080860
 GameObject:
   m_ObjectHideFlags: 0
@@ -339,7 +356,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21e64c9d58eb1374eb1f4a4dd75c208c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  carPrefab: {fileID: 101424, guid: ab7e767798d34f94daa6cf5169f8ba18, type: 3}
+  carPrefab: {fileID: 1740865480142414, guid: 663342408c5e6e24f8e0cb584631c6ad, type: 3}
   treePrefabOne: {fileID: 114418, guid: be878d9ea17907f4a8068678a5ce7908, type: 3}
   treePrefabTwo: {fileID: 114418, guid: 8b2d47fdc2e25ac4f9721480a68bbefa, type: 3}
   blockPrefab: {fileID: 7085549760766682290, guid: a31d66fa227bb4240b62f068cf31cd19, type: 3}

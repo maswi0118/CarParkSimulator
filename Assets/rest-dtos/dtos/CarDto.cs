@@ -2,7 +2,7 @@
 {
     public class CarDto
     {
-        public string name;
+        public int model;
         public string placeId;
     }
 }

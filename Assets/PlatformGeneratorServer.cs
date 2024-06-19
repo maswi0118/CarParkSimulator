@@ -1,14 +1,58 @@
 using rest_dtos;
 using UnityEngine;
 using System.Collections.Generic;
+using System;
+
+
+[Serializable]
+public class GameObjectInfo
+{
+    public string type;
+    public int model;
+    public GameObject gObject;
+
+    public GameObjectInfo(string type, int model, GameObject gObject)
+    {
+        Debug.Log(type + " " + model);
+        this.type = type;
+        this.model = model;
+        this.gObject = gObject;
+    }
+}
+
+[Serializable]
+public class LabelGameObjectPair
+{
+    public string label;
+    public GameObjectInfo gameObjectInfo;
+}
+
+[Serializable]
+public class LabelGameObjectMap
+{
+    public List<LabelGameObjectPair> pairs = new List<LabelGameObjectPair>();
+}
 
 public class ParkingSpace
 {
     public Dictionary<Vector2, string> coordinateToLabelMap;
+    public Dictionary<string, GameObjectInfo> labelToGameObjectInfoMap;
+
 
     public ParkingSpace()
     {
         coordinateToLabelMap = new Dictionary<Vector2, string>();
+        labelToGameObjectInfoMap = new Dictionary<string, GameObjectInfo>();
+    }
+
+    public void AddGameObjectInfo(string label, string type, int model, GameObject gObject)
+    {
+        Debug.Log("Adding game object info");
+        Debug.Log(label + " " + type + " " + model);
+        if (!labelToGameObjectInfoMap.ContainsKey(label))
+        {
+            labelToGameObjectInfoMap.Add(label, new GameObjectInfo(type, model, gObject));
+        }
     }
 
     public void AddLabel(Vector2 coordinate, string label)
@@ -30,6 +74,23 @@ public class ParkingSpace
         }
         return null; 
     }
+
+    public List<LabelGameObjectPair> ConvertDictionaryToList()
+    {
+        List<LabelGameObjectPair> list = new List<LabelGameObjectPair>();
+
+        foreach (var pair in labelToGameObjectInfoMap)
+        {
+            list.Add(new LabelGameObjectPair
+            {
+                label = pair.Key,
+                gameObjectInfo = pair.Value
+            });
+        }
+
+        return list;
+    }
+
 }
 
 public class CarAnimator : MonoBehaviour
@@ -110,12 +171,12 @@ public class PlatformGeneratorServer : MonoBehaviour
     {
         CarDto carData = JsonUtility.FromJson<CarDto>(data);
         GameObject car = Instantiate(carPrefab);
-        car.name = carData.name;
 
         CarAnimator carAnimator = car.AddComponent<CarAnimator>();
 
         // Set the initial position to A1 (you need to have a mapping for A1 in your coordinateToLabelMap)
         Vector2? initialCoordinates = parkingSpaceMapper.GetCoordinatesByLabel("A1");
+        Debug.Log("Initial coordinates: " + initialCoordinates);
         car.transform.position = new Vector3(initialCoordinates.Value.x, 0, initialCoordinates.Value.y);
 
         // Set the target position to the specified parking spot
@@ -125,6 +186,11 @@ public class PlatformGeneratorServer : MonoBehaviour
             Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 0, targetCoordinates.Value.y);
             carAnimator.SetTarget(targetPosition);
         }
+
+        parkingSpaceMapper.AddGameObjectInfo(carData.placeId, "Car", carData.model, car);
+        Debug.Log("Car model:" + carData.model + " is moving to " + carData.placeId);
+        Debug.Log(parkingSpaceMapper.labelToGameObjectInfoMap.Count);
+        // Debug.Log(parkingSpaceMapper.labelToGameObjectInfoMap[carData.placeId]);
     }
 
     void InstantiateTree(StructureDto structure)
@@ -140,6 +206,10 @@ public class PlatformGeneratorServer : MonoBehaviour
         }
         Vector2? coordinates = parkingSpaceMapper.GetCoordinatesByLabel(structure.placeId);
         tree.transform.position = new Vector3(coordinates.Value.x, 0, coordinates.Value.y);
+
+        parkingSpaceMapper.AddGameObjectInfo(structure.placeId, structure.type, structure.model, tree);
+        Debug.Log("Tree model:" + structure.model + " is moving to " + structure.placeId);
+        Debug.Log(parkingSpaceMapper.labelToGameObjectInfoMap.Count);
     }
 
     void InstantiateBlock(StructureDto structure)
@@ -147,14 +217,58 @@ public class PlatformGeneratorServer : MonoBehaviour
         GameObject block = Instantiate(blockPrefab);
         Vector2? coordinates = parkingSpaceMapper.GetCoordinatesByLabel(structure.placeId);
         block.transform.position = new Vector3(coordinates.Value.x, 0, coordinates.Value.y);
+
+        parkingSpaceMapper.AddGameObjectInfo(structure.placeId, structure.type, structure.model, block);
+        Debug.Log("Tree model:" + structure.model + " is moving to " + structure.placeId);
+        Debug.Log(parkingSpaceMapper.labelToGameObjectInfoMap.Count);
     }
 
-    void OnGetRequest(string path)
+    void DeleteObject(string data)
+    {
+        DeleteDto structure = JsonUtility.FromJson<DeleteDto>(data);
+        Vector2? coordinates = parkingSpaceMapper.GetCoordinatesByLabel(structure.placeId);
+
+
+        if (coordinates.HasValue && parkingSpaceMapper.labelToGameObjectInfoMap.ContainsKey(structure.placeId))
+        {
+            // Find and destroy the GameObject
+            GameObjectInfo gameObjectInfo = parkingSpaceMapper.labelToGameObjectInfoMap[structure.placeId];
+            GameObject objectToDelete = gameObjectInfo.gObject; // assuming `model` is storing the GameObject reference
+
+            if (objectToDelete != null)
+            {
+                Destroy(objectToDelete);
+            }
+
+            // Remove from the dictionaries
+            parkingSpaceMapper.coordinateToLabelMap.Remove(coordinates.Value);
+            parkingSpaceMapper.labelToGameObjectInfoMap.Remove(structure.placeId);
+
+            Debug.Log("Object at " + structure.placeId + " deleted.");
+        }
+        else
+        {
+            Debug.LogError("Object at " + structure.placeId + " not found.");
+        }
+    }
+
+
+    string OnGetRequest(string path)
     {
         // if ("/generate-board".Equals(path))
         // {
         //     GeneratePlatform();
         // }
+        if ("/current-state".Equals(path))
+        {
+            List<LabelGameObjectPair> list = parkingSpaceMapper.ConvertDictionaryToList();
+            LabelGameObjectMap map = new LabelGameObjectMap { pairs = list };
+            string json = JsonUtility.ToJson(map);
+            Debug.Log("Generated JSON: " + json);
+            return json;
+        }
+        return "{}";
+
     }
 
     void OnPostRequest(string path, string data)
@@ -172,6 +286,11 @@ public class PlatformGeneratorServer : MonoBehaviour
         if ("/new-structure".Equals(path))
         {
             GenerateStructure(data);
+        }
+
+        if ("/delete-object".Equals(path))
+        {
+            DeleteObject(data);
         }
     }
 
@@ -192,7 +311,9 @@ public class PlatformGeneratorServer : MonoBehaviour
         while (i <= amount)
         {
             float middleXCoordinate = (i * horizontalLineLength) + startingX - horizontalLineLength / 2f;
-            float middleZCoordinate = startingZ - verticalLineLength / 2f;
+            Debug.Log(startingZ + " " + verticalLineLength);
+            Debug.Log(rowLabel);
+            float middleZCoordinate = startingZ;// - verticalLineLength / 2f;
             string label = rowLabel + i;
 
             parkingSpaceMapper.AddLabel(new Vector2(middleXCoordinate, middleZCoordinate), label);
@@ -250,7 +371,7 @@ public class PlatformGeneratorServer : MonoBehaviour
         while (i <= amount)
         {
             float middleXCoordinate = (i * horizontalLineLength) + startingX - horizontalLineLength / 2f;
-            float middleZCoordinate = startingZ - verticalLineLength / 2f;
+            float middleZCoordinate = startingZ;// - verticalLineLength / 2f;
             string label = rowLabel + i;
 
             parkingSpaceMapper.AddLabel(new Vector2(middleXCoordinate, middleZCoordinate), label);
@@ -286,7 +407,7 @@ public class PlatformGeneratorServer : MonoBehaviour
 
         GameObject terrain = GameObject.CreatePrimitive(PrimitiveType.Plane);
         terrain.transform.position = new Vector3(0, 0, 0);
-        terrain.transform.localScale = new Vector3(6, 1, 6);
+        terrain.transform.localScale = new Vector3(20, 1, 20);
 
         Material asphaltMaterial = Resources.Load<Material>("Asphalt_material_11");
         Vector2 tiling = new Vector2(8, 8);

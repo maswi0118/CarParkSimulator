@@ -10,7 +10,7 @@ public class SimpleHTTPServer : MonoBehaviour
 
     private HttpListener listener;
 
-    public delegate void OnGetRequestHandler(string path);
+    public delegate string OnGetRequestHandler(string path);
     public event OnGetRequestHandler OnGet;
     
     public delegate void OnPostRequestHandler(string path, string data);
@@ -61,7 +61,12 @@ public class SimpleHTTPServer : MonoBehaviour
 
         if (context.Request.HttpMethod == "GET" && OnGet != null) 
         {
-            OnGet(path);
+            string responseContent = OnGet(path);
+            byte[] responseBytes = Encoding.UTF8.GetBytes(responseContent);
+            context.Response.ContentType = "application/json";
+            context.Response.ContentEncoding = Encoding.UTF8;
+            context.Response.ContentLength64 = responseBytes.Length;
+            context.Response.OutputStream.Write(responseBytes, 0, responseBytes.Length);
         } 
         else if (context.Request.HttpMethod == "POST" && OnPost != null) 
         {
@@ -70,10 +75,11 @@ public class SimpleHTTPServer : MonoBehaviour
                 data = reader.ReadToEnd();
             }
             OnPost(path, data);
+            byte[] responseBytes = Encoding.UTF8.GetBytes("OK");
+            context.Response.OutputStream.Write(responseBytes, 0, responseBytes.Length);
         }
 
-        byte[] responseBytes = Encoding.UTF8.GetBytes("OK");
-        context.Response.OutputStream.Write(responseBytes, 0, responseBytes.Length);
+
         context.Response.Close();
     }
 

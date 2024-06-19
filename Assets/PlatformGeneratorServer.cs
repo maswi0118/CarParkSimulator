@@ -169,13 +169,13 @@ public class CarAnimator : MonoBehaviour
             middleZ = newTarget.z - 5.0f;
         }
 
-        middleRowPosition = new Vector3(transform.position.x, 1.2f, middleZ);
+        middleRowPosition = new Vector3(transform.position.x, 0.8f, middleZ);
 
         // Set final target
-        finalTarget = new Vector3(newTarget.x, 1.2f, middleZ);
+        finalTarget = new Vector3(newTarget.x, 0.8f, middleZ);
 
         // Determine the final adjustment position
-        finalAdjustmentPosition = new Vector3(newTarget.x, 1.2f, newTarget.z);
+        finalAdjustmentPosition = new Vector3(newTarget.x, 0.8f, newTarget.z);
     }
 }
 
@@ -186,7 +186,11 @@ public class PlatformGeneratorServer : MonoBehaviour
 
     public ParkingSpace parkingSpaceMapper = new ParkingSpace();
 
-    public GameObject carPrefab;
+    public GameObject carPrefab1;
+    public GameObject carPrefab2;
+    public GameObject carPrefab3;
+    public GameObject carPrefab4;
+
     public GameObject treePrefabOne;
     public GameObject treePrefabTwo;
     public GameObject blockPrefab;
@@ -231,20 +235,39 @@ public class PlatformGeneratorServer : MonoBehaviour
     void InstantiateCar(string data)
     {
         CarDto carData = JsonUtility.FromJson<CarDto>(data);
-        GameObject car = Instantiate(carPrefab);
+
+        GameObject car;
+
+        if (carData.model == 1)
+        {
+            car = Instantiate(carPrefab1);
+        }
+        else if (carData.model == 2)
+        {
+            car = Instantiate(carPrefab2);
+        }
+        else if (carData.model == 3)
+        {
+            car = Instantiate(carPrefab3);
+        }
+        else
+        {
+            car = Instantiate(carPrefab4);
+        }
 
         CarAnimator carAnimator = car.AddComponent<CarAnimator>();
 
         // Set the initial position to A1 (you need to have a mapping for A1 in your coordinateToLabelMap)
         Vector2? initialCoordinates = parkingSpaceMapper.GetCoordinatesByLabel("A1");
         Debug.Log("Initial coordinates: " + initialCoordinates);
-        car.transform.position = new Vector3(initialCoordinates.Value.x - 5, 1.2f, initialCoordinates.Value.y + 8);
+        car.transform.position = new Vector3(initialCoordinates.Value.x - 5, 0.8f, initialCoordinates.Value.y + 8);
+        car.transform.localScale = new Vector3(0.85f, 0.85f, 0.85f);
 
         // Set the target position to the specified parking spot
         Vector2? targetCoordinates = parkingSpaceMapper.GetCoordinatesByLabel(carData.placeId);
         if (targetCoordinates.HasValue)
         {
-            Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 1.2f, targetCoordinates.Value.y);
+            Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 0.8f, targetCoordinates.Value.y);
             carAnimator.SetTarget(targetPosition, carData.placeId);
         }
 

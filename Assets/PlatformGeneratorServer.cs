@@ -147,7 +147,7 @@ public class CarAnimator : MonoBehaviour
         {
             // Calculate the angle between the current forward direction and the target direction
             float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Euler(0, 0, -angle);
+            transform.rotation = Quaternion.Euler(0, angle + 180, 0);
         }
     }
 
@@ -169,13 +169,13 @@ public class CarAnimator : MonoBehaviour
             middleZ = newTarget.z - 5.0f;
         }
 
-        middleRowPosition = new Vector3(transform.position.x, 0, middleZ);
+        middleRowPosition = new Vector3(transform.position.x, 1.2f, middleZ);
 
         // Set final target
-        finalTarget = new Vector3(newTarget.x, 0, middleZ);
+        finalTarget = new Vector3(newTarget.x, 1.2f, middleZ);
 
         // Determine the final adjustment position
-        finalAdjustmentPosition = new Vector3(newTarget.x, 0, newTarget.z);
+        finalAdjustmentPosition = new Vector3(newTarget.x, 1.2f, newTarget.z);
     }
 }
 
@@ -238,13 +238,13 @@ public class PlatformGeneratorServer : MonoBehaviour
         // Set the initial position to A1 (you need to have a mapping for A1 in your coordinateToLabelMap)
         Vector2? initialCoordinates = parkingSpaceMapper.GetCoordinatesByLabel("A1");
         Debug.Log("Initial coordinates: " + initialCoordinates);
-        car.transform.position = new Vector3(initialCoordinates.Value.x - 5, 0, initialCoordinates.Value.y + 8);
+        car.transform.position = new Vector3(initialCoordinates.Value.x - 5, 1.2f, initialCoordinates.Value.y + 8);
 
         // Set the target position to the specified parking spot
         Vector2? targetCoordinates = parkingSpaceMapper.GetCoordinatesByLabel(carData.placeId);
         if (targetCoordinates.HasValue)
         {
-            Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 0, targetCoordinates.Value.y);
+            Vector3 targetPosition = new Vector3(targetCoordinates.Value.x, 1.2f, targetCoordinates.Value.y);
             carAnimator.SetTarget(targetPosition, carData.placeId);
         }
 
@@ -353,6 +353,15 @@ public class PlatformGeneratorServer : MonoBehaviour
         {
             DeleteObject(data);
         }
+        if ("/repark-car".Equals(path))
+        {
+            ReparkCar(data);
+        }
+    }
+
+    void ReparkCar(string data)
+    {
+        
     }
 
     void generateRow(GameObject parkingSpace, string rowLabel, int amount, float startingX, float startingZ)
